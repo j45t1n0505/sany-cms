@@ -104,7 +104,7 @@ export default function ServiceRequests() {
         <StatCard label="Rating Rata-rata" value={avg} sub={`${rated.length} penilaian`} />
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_420px] gap-6">
+      <div className="grid lg:grid-cols-[1fr_420px] gap-4 lg:gap-6">
         <div className="space-y-4">
           {items.map((sr) => (
             <button key={sr.id} onClick={() => { setDetail(sr); setRate({ rating: sr.rating || 5, review: sr.review || "" }); }}

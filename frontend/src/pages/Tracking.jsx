@@ -81,8 +81,8 @@ export default function Tracking() {
         <StatCard label="Geofence Aktif" value={fences.filter((f) => f.active).length} />
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
-        <div className="bg-white border border-neutral-200 overflow-hidden h-[560px]" data-testid="tracking-map">
+      <div className="grid lg:grid-cols-[1fr_360px] gap-4 lg:gap-6">
+        <div className="bg-white border border-neutral-200 overflow-hidden h-[360px] sm:h-[440px] lg:h-[560px]" data-testid="tracking-map">
           <MapContainer center={CENTER} zoom={5} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
             <TileLayer
               attribution='&copy; OpenStreetMap'
@@ -113,7 +113,7 @@ export default function Tracking() {
           </MapContainer>
         </div>
 
-        <div className="bg-white border border-neutral-200 flex flex-col h-[560px]">
+        <div className="bg-white border border-neutral-200 flex flex-col h-[420px] lg:h-[560px]">
           <div className="p-4 border-b">
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari unit…"
               data-testid="tracking-search" className="rounded-none h-10" />

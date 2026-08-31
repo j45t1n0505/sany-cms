@@ -18,6 +18,7 @@ import Geofencing from "./pages/Geofencing";
 import ServiceRequests from "./pages/ServiceRequests";
 import PartsPortal from "./pages/PartsPortal";
 import RCS from "./pages/RCS";
+import Reports from "./pages/Reports";
 
 function Protected({ children }) {
   const { user, ready } = useAuth();
@@ -62,6 +63,7 @@ function App() {
               <Route path="service" element={<ServiceRequests />} />
               <Route path="parts-portal" element={<PartsPortal />} />
               <Route path="rcs" element={<RCS />} />
+              <Route path="reports" element={<Reports />} />
               <Route path="users" element={<Users />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

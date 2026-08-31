@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Truck, Wrench, Users, FileText, CalendarRange, Shield, LogOut,
-  Satellite, ShieldAlert, LifeBuoy, PackageSearch, Headset, Bell, Menu, X,
+  Satellite, ShieldAlert, LifeBuoy, PackageSearch, Headset, Bell, Menu, X, BarChart3,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
@@ -21,6 +21,7 @@ const items = [
   { to: "/app/crm", label: "CRM & Klien", icon: Users, roles: ["sales_manager"] },
   { to: "/app/quotations", label: "Quotation", icon: FileText, roles: ["sales_manager"] },
   { to: "/app/rentals", label: "Rental", icon: CalendarRange, roles: ["sales_manager"] },
+  { to: "/app/reports", label: "Laporan Utilisasi", icon: BarChart3, roles: ["sales_manager", "warehouse_staff"] },
   { to: "/app/users", label: "User Management", icon: Shield, roles: [] }, // superadmin only
 ];
 
@@ -85,7 +86,7 @@ export default function DashboardLayout() {
         </div>
 
         <button
-          onClick={() => nav("/app/geofencing")}
+          onClick={() => { nav("/app/geofencing"); setNavOpen(false); }}
           data-testid="alert-bell-btn"
           className="mx-3 mt-3 flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white transition-colors"
         >
@@ -104,6 +105,7 @@ export default function DashboardLayout() {
               key={i.to}
               to={i.to}
               end={i.end}
+              onClick={() => setNavOpen(false)}
               data-testid={`nav-${i.label.toLowerCase().replace(/\s|&/g, "-")}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest transition-colors ${
@@ -147,7 +149,7 @@ export default function DashboardLayout() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="p-5 pt-20 lg:p-10 max-w-[1600px]"
+          className="p-4 pt-20 sm:p-6 sm:pt-20 lg:p-10 max-w-[1600px] mx-auto"
         >
           <Outlet />
         </motion.div>

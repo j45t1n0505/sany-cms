@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, X, Upload, Loader2 } from "lucide-react";
 import api, { formatApiError, formatIDR } from "../lib/api";
 import { PageHeader } from "../components/PageBits";
+import { UnitGallery } from "../components/UnitGallery";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -29,14 +30,12 @@ export default function Units() {
   const [specsText, setSpecsText] = useState("");
   const [imgText, setImgText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
 
   const imageList = imgText.split("\n").map((s) => s.trim()).filter(Boolean);
 
-  const uploadImages = async (e) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
-    if (!files.length) return;
+  const handleFiles = async (files) => {
     const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     const valid = files.filter((f) => allowed.includes(f.type.toLowerCase()));
     if (valid.length !== files.length) toast.error("Hanya format PNG, JPG/JPEG, atau WEBP");
@@ -57,6 +56,19 @@ export default function Units() {
       toast.success(`${uploaded.length} foto terunggah`);
     }
     setUploading(false);
+  };
+
+  const uploadImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (files.length) handleFiles(files);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length) handleFiles(files);
   };
 
   const removeImage = (url) => setImgText(imageList.filter((u) => u !== url).join("\n"));
@@ -109,11 +121,7 @@ export default function Units() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((u) => (
           <div key={u.id} data-testid={`unit-card-${u.id}`} className="bg-white border border-neutral-200 overflow-hidden group hover:border-[#E60012] transition-colors">
-            <div className="aspect-[16/10] bg-neutral-100 overflow-hidden">
-              {u.images?.[0] ? (
-                <img src={u.images[0]} alt={u.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              ) : <div className="w-full h-full grid place-items-center font-mono text-xs text-neutral-400">NO IMAGE</div>}
-            </div>
+            <UnitGallery images={u.images || []} alt={u.name} testId={`unit-gallery-${u.id}`} />
             <div className="p-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-mono text-[10px] tracking-widest uppercase text-neutral-500">{u.category}{u.subcategory ? ` · ${u.subcategory}` : ""} · {u.model_code}</span>
@@ -196,24 +204,35 @@ export default function Units() {
                 <Button
                   variant="outline"
                   onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
                   disabled={uploading}
                   data-testid="unit-upload-image-btn"
-                  className="w-full rounded-none h-11 font-mono text-[10px] uppercase tracking-widest border-dashed"
+                  className={`w-full rounded-none h-auto py-6 flex-col gap-2 font-mono text-[10px] uppercase tracking-widest border-dashed transition-colors ${
+                    dragOver ? "border-[#E60012] bg-[#E60012]/5 text-[#E60012]" : ""
+                  }`}
                 >
-                  {uploading
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengunggah…</>
-                    : <><Upload className="w-4 h-4 mr-2" /> Unggah dari perangkat (PNG / JPG / WEBP)</>}
+                  {uploading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Mengunggah…</>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" />
+                      <span>{dragOver ? "Lepaskan foto di sini" : "Tarik & lepas foto ke sini"}</span>
+                      <span className="text-[9px] text-neutral-400 normal-case tracking-normal">atau klik untuk pilih file — PNG / JPG / JPEG / WEBP, maks 10MB</span>
+                    </>
+                  )}
                 </Button>
 
                 {imageList.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 mt-3" data-testid="unit-image-previews">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3" data-testid="unit-image-previews">
                     {imageList.map((url) => (
                       <div key={url} className="relative aspect-square bg-neutral-100 border border-neutral-200 group">
                         <img src={url} alt="foto unit" className="w-full h-full object-cover" />
                         <button
                           onClick={() => removeImage(url)}
                           data-testid="unit-remove-image-btn"
-                          className="absolute top-1 right-1 w-6 h-6 bg-neutral-950/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 w-6 h-6 bg-neutral-950/80 text-white grid place-items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                         >
                           <X className="w-3 h-3" />
                         </button>

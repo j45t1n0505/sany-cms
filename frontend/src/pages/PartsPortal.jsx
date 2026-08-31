@@ -114,7 +114,7 @@ export default function PartsPortal() {
         {!filtered.length && <div className="md:col-span-2 xl:col-span-3"><EmptyState title="Suku cadang tidak ditemukan" hint="Coba kata kunci atau kategori lain." /></div>}
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+      <div className="grid lg:grid-cols-[1fr_360px] gap-4 lg:gap-6">
         <div className="bg-white border border-neutral-200">
           <div className="p-5 border-b font-mono text-[10px] uppercase tracking-[0.3em] text-neutral-500 flex items-center gap-2">
             <Truck className="w-3 h-3 text-[#E60012]" /> Pelacakan Pengiriman Komponen

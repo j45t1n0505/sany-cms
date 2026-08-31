@@ -84,7 +84,7 @@ export default function Geofencing() {
         <StatCard label="Belum Dibaca" value={unread} sub="notifikasi baru" />
       </div>
 
-      <div className="bg-white border border-neutral-200 mb-8">
+      <div className="bg-white border border-neutral-200 mb-8 overflow-x-auto">
         <div className="p-5 border-b font-mono text-[10px] uppercase tracking-[0.3em] text-neutral-500">Daftar Zona</div>
         <Table>
           <TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Unit</TableHead><TableHead>Pusat</TableHead><TableHead>Radius</TableHead><TableHead>Trigger</TableHead><TableHead>Email</TableHead><TableHead>Aktif</TableHead><TableHead></TableHead></TableRow></TableHeader>

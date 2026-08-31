@@ -60,6 +60,13 @@ service_requests, part_orders, rcs_sessions
 - Form Katalog Unit kini bisa **unggah foto dari perangkat** (PNG/JPG/JPEG/WEBP, multi-file, maks 10MB/file) ke Emergent Object Storage, dengan preview thumbnail + tombol hapus, dan tetap mendukung tempel URL manual.
 - Endpoint baru `GET /api/public-files/{path}` (tanpa auth, cache 24 jam) agar `<img>` katalog bisa menampilkan foto hasil unggahan; `POST /api/uploads` sekarang mengembalikan `public_url`.
 
+## Update 31 Aug 2026 — Galeri, Drag&Drop, Laporan Utilisasi, Responsif
+- **Galeri multi-foto**: komponen `UnitGallery.jsx` — slider fade dengan tombol prev/next, dot indicator, counter (1/N) di setiap kartu katalog unit.
+- **Drag & drop upload**: dropzone di form unit (PNG/JPG/JPEG/WEBP, multi-file, maks 10MB), preview thumbnail + hapus, tetap mendukung tempel URL.
+- **Laporan Utilisasi** (`/app/reports`, `GET /api/reports/utilization?month=YYYY-MM`): jam kerja (HM) vs idle time per unit, % utilisasi, estimasi tagihan sewa (tarif_harian × jam_kerja/8), bar chart stacked (recharts), export CSV.
+- **Responsif penuh**: PageHeader/StatCard skala bertahap, sidebar drawer + auto-close di mobile, tinggi peta/panel adaptif, tabel scroll horizontal. Terverifikasi 0 horizontal overflow di 390px & 768px pada semua halaman.
+- Perbaikan dari test iterasi 3: validasi bulan `2026-99` kini 400 (bukan 500); tombol slider terlihat & fokusable di desktop.
+
 ## Backlog
 - P1: Hosting PDF repair manual per unit/sparepart (Object Storage)
 - P1: SSE/WebSocket menggantikan 3 polling interval (tracking 15s, geofence 20s, bell 20s)

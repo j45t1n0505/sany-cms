@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 3: tested new increments — utilization report, public uploads/public-files, drag&drop image upload, unit gallery slider, responsive layout. Backend pytest 8/9 pass (test_iter3_features.py) + regression 13/13 (test_new_features.py). Frontend: Reports page fully functional (4 StatCards, chart 20 bars, 16 rows, month change reloads with zeros for 2020-01, CSV download triggers utilisasi-2020-01.csv). Units upload: PNG via set_input_files renders preview (naturalWidth=8), remove button removes, .txt file rejected with 'Hanya format PNG, JPG/JPEG, atau WEBP' toast and no preview added; saved new unit shows uploaded photo in katalog card (gallery image loaded naturalWidth>0). Gallery slider: after editing a unit with 2 URLs, prev/next buttons switch photos and dot-0/dot-1 active class toggles correctly. Responsive: 0 horizontal overflow at 390px on /app, /app/units, /app/reports, /app/tracking, /app/geofencing, /app/service, /app/parts-portal, /app/rcs; same clean at 768px. mobile-nav-toggle opens sidebar and auto-closes after link click (no backdrop remains). Regression: Overview, Spareparts, CRM, Quotations, Rentals all render headings with 0 console errors.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/reports/utilization?month=2026-99", "issue": "Returns 500 Internal Server Error instead of 400. Root cause: try/except in utilization_report() catches ValueError from int() parsing, but datetime(y, m, 1) is called OUTSIDE the try block. When month is 99, datetime raises ValueError('month must be in 1..12') which propagates as 500. Fix: move datetime(...) construction inside the try/except, or explicitly validate 1 <= m <= 12 before constructing.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter3_features.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/iter3_results.xml"
+  ],
+  "action_items": [
+    "Fix utilization_report month validation: wrap datetime(y, m, 1) construction in the same try/except that catches ValueError, or add explicit range check (1<=m<=12) — currently /api/reports/utilization?month=2026-99 crashes with 500."
+  ],
+  "critical_code_review_comments": [
+    "server.py now 1508 lines (was 1423) — split into routers (uploads/public-files/reports separate module) recommended.",
+    "utilization_report calls db.telemetry.find(...).to_list(20000) per unit sequentially — for 16 units this is 16 sequential round-trips; consider a single aggregation pipeline or asyncio.gather.",
+    "public_file endpoint has no rate limiting or ownership check — any authenticated URL from another tenant/user is world-readable once path is known. UUID makes it hard to guess but consider signed URLs with expiry for future.",
+    "Units.jsx uploads sequentially in a for-loop; multi-file drop with N files makes N round-trips — could Promise.all for speed.",
+    "UnitGallery has md:opacity-0 md:group-hover:opacity-100 on prev/next — on desktop the buttons are invisible unless hover; keyboard users cannot see them. Consider always-visible on focus."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter3_features.py (new)"
+  ],
+  "success_rate": {"backend": "88% (8/9 new + 13/13 regression)", "frontend": "100% of tested flows"},
+  "test_credentials": "superadmin j45t1n0505@gmail.com / SanyAdmin2026! — used for all flows; from /app/memory/test_credentials.md.",
+  "seed_data_creation": "Created transient uploads via /api/uploads for testing (small 8x8 PNG, several files retained in db.files — no cleanup endpoint). Test unit 'TEST_UPLOAD_UNIT' with model 'TESTUP01' was created and deleted successfully. Note: iteration_2 already left one empty edit-artifact unit visible in catalog (Rp 0 card) — pre-existing, not from this run.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Only backend bug remaining: /api/reports/utilization?month=2026-99 → 500. After main agent fixes, re-run: pytest backend/tests/test_iter3_features.py -n 0. Public-files may intermittently 000-timeout on external URL for a specific path due to Cloudflare edge caching — retry with a fresh upload. All other flows are stable.",
+  "rca of the issue": "utilization_report(): try{int(month[:4]); int(month[5:7])}except (ValueError, IndexError): 400 — BUT datetime(y, m, 1) executes AFTER the except block. When m>12 int() succeeds and datetime() raises unhandled ValueError → FastAPI wraps as 500. Fix by either (a) moving both int() and datetime() into the same try, or (b) `if not (1<=m<=12): raise HTTPException(400, ...)` before datetime construction."
+}

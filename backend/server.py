@@ -1201,6 +1201,74 @@ async def public_file(path: str):
         headers={"Cache-Control": "public, max-age=86400"},
     )
 
+@api.get("/reports/utilization")
+async def utilization_report(month: Optional[str] = None, _: dict = Depends(get_current_user)):
+    """Laporan jam kerja (HM) & idle time per unit untuk satu bulan (YYYY-MM)."""
+    now = datetime.now(timezone.utc)
+    month = month or now.strftime("%Y-%m")
+    try:
+        y, m = int(month[:4]), int(month[5:7])
+        start = datetime(y, m, 1, tzinfo=timezone.utc)
+    except (ValueError, IndexError):
+        raise HTTPException(status_code=400, detail="Format bulan harus YYYY-MM")
+    end = datetime(y + (m == 12), (m % 12) + 1, 1, tzinfo=timezone.utc)
+    s_iso, e_iso = start.isoformat(), end.isoformat()
+
+    units = await db.units.find({}, {"_id": 0, "id": 1, "name": 1, "model_code": 1, "category": 1}).to_list(500)
+    rentals = await db.rentals.find({}, {"_id": 0}).to_list(1000)
+    rate_by_unit = {r["unit_id"]: r.get("daily_rate", 0) for r in rentals if r.get("unit_id")}
+
+    rows = []
+    for u in units:
+        pts = await db.telemetry.find(
+            {"unit_id": u["id"], "recorded_at": {"$gte": s_iso, "$lt": e_iso}},
+            {"_id": 0, "hm": 1, "engine_on": 1, "recorded_at": 1},
+        ).sort("recorded_at", 1).to_list(20000)
+        if not pts:
+            state = await db.unit_state.find_one({"unit_id": u["id"]}, {"_id": 0, "hm": 1})
+            rows.append({
+                "unit_id": u["id"], "name": u["name"], "model_code": u.get("model_code"),
+                "category": u.get("category"), "hm_start": round((state or {}).get("hm", 0), 1),
+                "hm_end": round((state or {}).get("hm", 0), 1), "working_hours": 0,
+                "idle_hours": 0, "monitored_hours": 0, "utilization_pct": 0,
+                "daily_rate": rate_by_unit.get(u["id"], 0), "billable_amount": 0, "data_points": 0,
+            })
+            continue
+        hm_start, hm_end = pts[0].get("hm", 0), pts[-1].get("hm", 0)
+        working = max(0.0, hm_end - hm_start)
+        first = datetime.fromisoformat(pts[0]["recorded_at"])
+        last = datetime.fromisoformat(pts[-1]["recorded_at"])
+        monitored = max(working, (last - first).total_seconds() / 3600)
+        idle = max(0.0, monitored - working)
+        rate = rate_by_unit.get(u["id"], 0)
+        rows.append({
+            "unit_id": u["id"], "name": u["name"], "model_code": u.get("model_code"),
+            "category": u.get("category"),
+            "hm_start": round(hm_start, 1), "hm_end": round(hm_end, 1),
+            "working_hours": round(working, 2), "idle_hours": round(idle, 2),
+            "monitored_hours": round(monitored, 2),
+            "utilization_pct": round((working / monitored * 100) if monitored else 0, 1),
+            "daily_rate": rate,
+            "billable_amount": round(rate * (working / 8), 2) if rate else 0,
+            "data_points": len(pts),
+        })
+
+    rows.sort(key=lambda r: r["working_hours"], reverse=True)
+    return {
+        "month": month,
+        "generated_at": now_iso(),
+        "totals": {
+            "units": len(rows),
+            "working_hours": round(sum(r["working_hours"] for r in rows), 2),
+            "idle_hours": round(sum(r["idle_hours"] for r in rows), 2),
+            "billable_amount": round(sum(r["billable_amount"] for r in rows), 2),
+            "avg_utilization_pct": round(
+                sum(r["utilization_pct"] for r in rows) / len(rows), 1) if rows else 0,
+        },
+        "rows": rows,
+    }
+
+
 # ---------------- Seed ----------------
 async def seed_data():
     # Users

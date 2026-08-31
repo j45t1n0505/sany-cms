@@ -96,8 +96,8 @@ export default function RCS() {
         <StatCard label="Selesai" value={sessions.filter((s) => s.status === "closed").length} />
       </div>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-6">
-        <div className="bg-white border border-neutral-200 divide-y max-h-[620px] overflow-y-auto">
+      <div className="grid lg:grid-cols-[320px_1fr] gap-4 lg:gap-6">
+        <div className="bg-white border border-neutral-200 divide-y max-h-[280px] lg:max-h-[620px] overflow-y-auto">
           {sessions.map((s) => (
             <button key={s.id} onClick={() => { setActive(s); setInCall(false); }}
               data-testid={`rcs-session-${s.id}`}
@@ -115,7 +115,7 @@ export default function RCS() {
           {!sessions.length && <div className="p-6"><EmptyState title="Belum ada sesi" hint="Buat sesi konsultasi darurat." /></div>}
         </div>
 
-        <div className="bg-white border border-neutral-200 flex flex-col min-h-[620px]" data-testid="rcs-detail">
+        <div className="bg-white border border-neutral-200 flex flex-col min-h-[480px] lg:min-h-[620px]" data-testid="rcs-detail">
           {!active ? (
             <div className="flex-1 grid place-items-center text-sm text-neutral-500 p-8">
               Pilih atau buat sesi konsultasi untuk memulai.
@@ -148,7 +148,7 @@ export default function RCS() {
               </div>
 
               {inCall && (
-                <div className="bg-neutral-950 h-[380px]">
+                <div className="bg-neutral-950 h-[240px] sm:h-[320px] lg:h-[380px]">
                   <iframe
                     title="rcs-call"
                     data-testid="rcs-call-frame"
