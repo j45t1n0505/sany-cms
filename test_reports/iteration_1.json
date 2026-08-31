@@ -1,0 +1,22 @@
+{
+  "summary": "Backend-only smoke test for SANY PERKASA CMS. All 26 checks passed across auth, RBAC, units, spareparts, CRM, quotations, rentals, and analytics. Live URL: https://sany-fleet-manager.preview.emergentagent.com/api. Note: initial test payloads had to be aligned with real Pydantic schemas (model_code+year+price for units, reason for stock moves, kind+summary for interactions, item_type on quotation lines) - these are schema-name deltas vs the task description, not bugs.",
+  "tested_scope": ["backend", "auth", "integration"],
+  "passed": [
+    "Auth: login for superadmin/sales/warehouse returns token+user; wrong password -> 401; GET /auth/me with Bearer returns user",
+    "RBAC: warehouse POST /units -> 403; sales POST /units -> 200; superadmin GET /users -> 200 (3 users); sales GET /users -> 403",
+    "Units: GET /units returns 6+ seeded (7 after create); GET /units/public works without auth; POST/DELETE work for Sales Manager",
+    "Spareparts: 8 seeded items with stock/min_stock; POST /spareparts/move (+5) increases stock; oversized negative move -> 400; GET /spareparts/moves returns history",
+    "CRM: 4 seeded clients; POST /interactions creates; GET /interactions?client_id filters",
+    "Quotations: POST auto-calculates subtotal=2500000, tax=275000 (11%), total=2775000; quote_no format QT-YYYYMMDD-XXXXXX; PUT /quotations/{id}/status?status=accepted works",
+    "Rentals: POST computes days=5, total_amount=5,000,000; PUT status=active sets unit->rented; PUT status=completed sets unit->available",
+    "Analytics: GET /analytics/summary returns totals, units_by_status, units_by_category, revenue, sales_trend, low_stock_items"
+  ],
+  "failed": [],
+  "action_items": [
+    "Optional: task description used field names (brand, daily_rate, note, type, notes) that differ from actual API schema (model_code+year+price, reason, kind+summary). Consider updating docs/PRD to match server.py schemas or align schemas to docs.",
+    "Minor: no GET /api/units/{id} endpoint exists - clients must fetch via list; add it if frontend needs single-unit fetch."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (skipped per request)"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}

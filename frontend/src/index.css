@@ -1,0 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800,900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f6f6f4;
+    color: #0a0a0a;
+}
+
+.font-display {
+    font-family: "Cabinet Grotesk", "Space Grotesk", ui-sans-serif, sans-serif;
+    letter-spacing: -0.02em;
+}
+.font-mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+::selection {
+    background: #e60012;
+    color: #ffffff;
+}
+
+@layer base {
+    :root {
+        --background: 45 20% 97%;
+        --foreground: 0 0% 6%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 6%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 6%;
+        --primary: 353 100% 45%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 9%;
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 40%;
+        --accent: 0 0% 95%;
+        --accent-foreground: 0 0% 9%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 89%;
+        --input: 0 0% 89%;
+        --ring: 353 100% 45%;
+        --chart-1: 353 100% 45%;
+        --chart-2: 30 90% 55%;
+        --chart-3: 210 30% 25%;
+        --chart-4: 45 90% 55%;
+        --chart-5: 0 0% 15%;
+        --radius: 0.25rem;
+    }
+    .dark {
+        --background: 0 0% 4%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 8%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 8%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 353 100% 55%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 12%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 14%;
+        --muted-foreground: 0 0% 65%;
+        --accent: 0 0% 14%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62% 45%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 18%;
+        --input: 0 0% 18%;
+        --ring: 353 100% 55%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Grain texture overlay */
+.grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    opacity: 0.12;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+/* Marquee */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.marquee-track {
+    animation: marquee 30s linear infinite;
+    will-change: transform;
+}
+
+/* Ticker chip pulse */
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(230, 0, 18, 0); }
+}
+.pulse-red { animation: pulse-red 2s infinite; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+
+/* Ambient glow accent line */
+.accent-line {
+    position: relative;
+}
+.accent-line::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #e60012 0%, transparent 100%);
+}
+
+@layer base {
+    [data-debug-wrapper="true"] { display: contents !important; }
+}

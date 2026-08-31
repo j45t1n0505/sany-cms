@@ -1,0 +1,107 @@
+{
+  "theme_type": "hybrid_fullstack",
+  "industry": "Heavy Machinery / Construction (SANY PERKASA)",
+  "primary_color": "#E60012",
+  "archetype": "SWISS & HIGH-CONTRAST",
+  "typography": {
+    "heading_font": "Cabinet Grotesk",
+    "body_font": "Manrope",
+    "notes": "Use tracking-tight for H1 and H2. H1 maximum text-6xl. Do not use generic sans (Inter/Roboto) for headings. Use tracking-widest for uppercase subheadings (overlines)."
+  },
+  "colors": {
+    "primary": "#E60012",
+    "secondary": "#0A0A0A",
+    "accent": "#FF3B30",
+    "background": {
+      "light": "#F8F9FA",
+      "dark": "#050505"
+    },
+    "surface": {
+      "light": "#FFFFFF",
+      "dark": "#121212"
+    },
+    "text": {
+      "light": "#1A1A1A",
+      "dark": "#FAFAFA"
+    },
+    "rules": "Avoid pure black and pure white where possible. Use tinted greys. Do NOT use teal green or teal blue (#1B93A4) for dashboards. Only use primary color for CTAs."
+  },
+  "visual_enhancers": {
+    "surfaces": [
+      "The 'Tracing Beam' for high-conversion Cards in Landing Page.",
+      "Grid Borders for Data-heavy Dashboards and Feature sections.",
+      "Glassmorphism with heavy blur for sticky headers and floating navs."
+    ],
+    "shadows": "Sharp, flat shadows with 1px borders in Dashboard. Soft, diffuse ambient shadows in Landing page.",
+    "textures": "Subtle grain overlays in dark mode hero sections."
+  },
+  "grids": {
+    "landing_page": "Bento Grid Mode A (Tetris Grid) with aggressive asymmetry. Wide gaps (gap-8 to gap-12).",
+    "dashboard": "High Density Grid Mode B. Tight gaps (gap-4 or gap-6). Cards should be rectangular with sharp edges or subtle roundness (max 8px border-radius). Do NOT overuse Shadcn card component; go cardless where appropriate."
+  },
+  "layouts": {
+    "landing_page": {
+      "hero": "Cinematic hero with heavy machinery background image. Max overlay opacity bg-black/50. Massive typography, animated entrances. Must include a 'Living Texture' marquee for brand partners/stats.",
+      "catalog": "Immersive product showcase using bento grids. Highlight technical specs prominently.",
+      "contact": "Swiss layout, brutalist forms. Strong contrast."
+    },
+    "dashboard": {
+      "sidebar": "Fixed left sidebar navigation with high-contrast active states. Dark themed sidebar against a slightly lighter background.",
+      "topbar": "Glassmorphic or solid background top bar. NO transparent backgrounds.",
+      "content": "Dense data tables, metric cards with 1px border. Use Recharts for analytics."
+    }
+  },
+  "motion": {
+    "landing_page": "Heavy use of framer-motion. Parallax scrolling, staggered entrance animations, text-reveal on scroll.",
+    "dashboard": "Minimalist. Micro-interactions on hover/focus. Quick state transitions."
+  },
+  "media": {
+    "images": {
+      "hero_excavator": "https://images.unsplash.com/photo-1630288214173-a119cf823388?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwzfHxleGNhdmF0b3IlMjBjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDB8fHx8MTc4ODE3MjgzNnww&ixlib=rb-4.1.0&q=85",
+      "dump_truck_excavator": "https://images.unsplash.com/photo-1575281923032-f40d94ef6160?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxleGNhdmF0b3IlMjBjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDB8fHx8MTc4ODE3MjgzNnww&ixlib=rb-4.1.0&q=85",
+      "warehouse_racks": "https://images.unsplash.com/photo-1627309366653-2dedc084cdf1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHw0fHx3YXJlaG91c2UlMjByYWNrcyUyMGhlYXZ5JTIwbWFjaGluZXJ5JTIwcGFydHN8ZW58MHx8fHwxNzg4MTcyODQxfDA&ixlib=rb-4.1.0&q=85",
+      "warehouse_boxes": "https://images.unsplash.com/photo-1672552226380-486fe900b322?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwzfHx3YXJlaG91c2UlMjByYWNrcyUyMGhlYXZ5JTIwbWFjaGluZXJ5JTIwcGFydHN8ZW58MHx8fHwxNzg4MTcyODQxfDA&ixlib=rb-4.1.0&q=85",
+      "crm_team_meeting": "https://images.unsplash.com/photo-1581094488379-6a10d04c0f04?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwyfHxidXNpbmVzcyUyMHRlYW0lMjBtZWV0aW5nJTIwY29uc3RydWN0aW9uJTIwZW5naW5lZXJpbmd8ZW58MHx8fHwxNzg4MTcyODQ4fDA&ixlib=rb-4.1.0&q=85",
+      "construction_team": "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHRlYW0lMjBtZWV0aW5nJTIwY29uc3RydWN0aW9uJTIwZW5naW5lZXJpbmd8ZW58MHx8fHwxNzg4MTcyODQ4fDA&ixlib=rb-4.1.0&q=85"
+    }
+  },
+  "libraries": {
+    "icons": "@phosphor-icons/react",
+    "animations": "framer-motion",
+    "charts": "recharts",
+    "scroll": "lenis",
+    "ui_components": "shadcn/ui"
+  },
+  "accessibility": {
+    "contrast": "Ensure 4.5:1 for normal text, 3:1 for large text.",
+    "interactions": "All interactive elements MUST have focus and hover states with explicit text color definitions. Add data-testid to all interactive elements."
+  },
+  "instructions_to_main_agent": [
+    "Use Cabinet Grotesk for Headings and Manrope for body text.",
+    "Implement a Dark/Light mode toggle, but lean towards dark cinematic aesthetic for the landing page.",
+    "Do NOT use complete transparent backgrounds for headers or overlays that sit above content.",
+    "For the Landing page, utilize Framer Motion for massive transitions, parallax, and staggered reveals.",
+    "For Dashboard, use high density grids, Shadcn components heavily customized to match the Swiss High-Contrast archetype. Do not use teal green/blue.",
+    "Apply 'data-testid' to all buttons, links, inputs. Eg: data-testid='submit-rental-btn'.",
+    "Use Phosphor Icons for sharp, industrial-looking icons.",
+    "Incorporate a dark cinematic hero section in the public landing page featuring the excavator image with an overlay of bg-black/50.",
+    "Do NOT center align the app container in App.css.",
+    "The project uses Javascript (.js/.jsx), NOT Typescript (.ts/.tsx). Follow this strictly when importing/exporting."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN.",
+    "Use sonner for toasts. Sonner component is located in /app/frontend/src/components/ui/sonner.jsx or similar path for .js projects."
+  ]
+}
