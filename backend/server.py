@@ -152,7 +152,8 @@ class UserOut(BaseModel):
 
 class UnitIn(BaseModel):
     name: str
-    category: str  # Excavator / Dump Truck / Crane / Loader / Bulldozer
+    category: str  # Excavator / Drilling Rig / Wheel Loader
+    subcategory: Optional[str] = ""
     model_code: str
     year: int
     price: float
@@ -599,46 +600,98 @@ async def seed_data():
 
     # Units
     if await db.units.count_documents({}) == 0:
+        IMG_SMALL = "https://images.unsplash.com/photo-1605286603787-f58f93e14992?w=1200&q=80"
+        IMG_MED = "https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200&q=80"
+        IMG_MED2 = "https://images.unsplash.com/photo-1575281923032-f40d94ef6160?w=1200&q=80"
+        IMG_LARGE = "https://images.unsplash.com/photo-1587919968590-fbc98cea6c9a?w=1200&q=80"
+        IMG_LARGE2 = "https://images.unsplash.com/photo-1523848309072-c199db53f137?w=1200&q=80"
+        IMG_RIG = "https://images.unsplash.com/photo-1562237548-3c36707230ce?w=1200&q=80"
+        IMG_RIG2 = "https://images.unsplash.com/photo-1562237553-36ad661d6f2c?w=1200&q=80"
+        IMG_LOADER = "https://images.unsplash.com/photo-1629807473015-41699c4471b5?w=1200&q=80"
         units_seed = [
-            {"name": "SANY SY215C Excavator", "category": "Excavator", "model_code": "SY215C",
-             "year": 2024, "price": 1850000000, "status": "available",
-             "description": "Ekskavator 21.5 ton, cocok untuk pertambangan dan konstruksi berat.",
-             "specs": {"operating_weight": "21500 kg", "bucket_capacity": "1.0 m³",
-                       "engine": "Isuzu 4HK1X", "power": "129 kW", "max_dig_depth": "6720 mm"},
-             "images": ["https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200"]},
-            {"name": "SANY SY365H Excavator", "category": "Excavator", "model_code": "SY365H",
+            {"name": "SANY SY55C", "category": "Excavator", "subcategory": "Small Excavator", "model_code": "SY55C",
+             "year": 2025, "price": 685000000, "status": "available",
+             "description": "Mini ekskavator 5.5 ton untuk konstruksi ringan dan lanskap.",
+             "specs": {"operating_weight": "5780 kg", "bucket_capacity": "0.21 m³", "engine": "Yanmar 4TNV94L", "power": "37.5 kW"},
+             "images": [IMG_SMALL]},
+            {"name": "SANY SY75C", "category": "Excavator", "subcategory": "Small Excavator", "model_code": "SY75C",
+             "year": 2025, "price": 780000000, "status": "available",
+             "description": "Banyak digunakan di sektor konstruksi ringan, perkebunan, dan operasional militer.",
+             "specs": {"operating_weight": "7500 kg", "bucket_capacity": "0.32 m³", "engine": "Yanmar 4TNV98", "power": "45 kW"},
+             "images": [IMG_SMALL]},
+            {"name": "SANY SY135C", "category": "Excavator", "subcategory": "Small Excavator", "model_code": "SY135C",
+             "year": 2025, "price": 1150000000, "status": "available",
+             "description": "Ekskavator 13.5 ton serbaguna untuk infrastruktur dan perkebunan.",
+             "specs": {"operating_weight": "13500 kg", "bucket_capacity": "0.53 m³", "engine": "Isuzu 4JJ1X", "power": "86 kW"},
+             "images": [IMG_MED2]},
+            {"name": "SANY SY205C", "category": "Excavator", "subcategory": "Medium Excavator", "model_code": "SY205C",
+             "year": 2025, "price": 1650000000, "status": "available",
+             "description": "Ekskavator 20.5 ton dengan efisiensi bahan bakar terbaik di kelasnya.",
+             "specs": {"operating_weight": "20500 kg", "bucket_capacity": "0.9 m³", "engine": "Mitsubishi 4M50", "power": "118 kW"},
+             "images": [IMG_MED2]},
+            {"name": "SANY SY215C", "category": "Excavator", "subcategory": "Medium Excavator", "model_code": "SY215C",
+             "year": 2025, "price": 1850000000, "status": "available",
+             "description": "Salah satu unit paling populer untuk sektor konstruksi dan infrastruktur umum.",
+             "specs": {"operating_weight": "21500 kg", "bucket_capacity": "1.0 m³", "engine": "Isuzu 4HK1X", "power": "129 kW", "max_dig_depth": "6720 mm"},
+             "images": [IMG_MED]},
+            {"name": "SANY SY365H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY365H",
              "year": 2024, "price": 2650000000, "status": "rented",
              "description": "Ekskavator 36.5 ton untuk aplikasi berat & tambang.",
-             "specs": {"operating_weight": "36500 kg", "bucket_capacity": "1.9 m³",
-                       "engine": "Mitsubishi 6D34", "power": "202 kW", "max_dig_depth": "7420 mm"},
-             "images": ["https://images.unsplash.com/photo-1575281923032-f40d94ef6160?w=1200"]},
-            {"name": "SANY SKT90S Dump Truck", "category": "Dump Truck", "model_code": "SKT90S",
-             "year": 2023, "price": 4200000000, "status": "available",
-             "description": "Mining dump truck kapasitas 60 ton.",
-             "specs": {"payload": "60 t", "engine": "Cummins QSK19",
-                       "power": "597 kW", "top_speed": "60 km/h"},
-             "images": ["https://images.unsplash.com/photo-1573497019236-17f8177b81e8?w=1200"]},
-            {"name": "SANY STC750 Truck Crane", "category": "Crane", "model_code": "STC750",
-             "year": 2024, "price": 5800000000, "status": "available",
-             "description": "Truck crane kapasitas angkat 75 ton, boom 47m.",
-             "specs": {"max_lift": "75 t", "boom_length": "47 m",
-                       "engine": "Weichai", "counterweight": "22 t"},
-             "images": ["https://images.unsplash.com/photo-1581094488379-6a10d04c0f04?w=1200"]},
-            {"name": "SANY SY75C Mini Excavator", "category": "Excavator", "model_code": "SY75C",
-             "year": 2024, "price": 780000000, "status": "maintenance",
-             "description": "Mini ekskavator 7.5 ton untuk kerja perkotaan.",
-             "specs": {"operating_weight": "7500 kg", "bucket_capacity": "0.32 m³",
-                       "engine": "Yanmar", "power": "45 kW"},
-             "images": ["https://images.unsplash.com/photo-1611024847416-e552edf88ecd?w=1200"]},
-            {"name": "SANY SW956K Wheel Loader", "category": "Loader", "model_code": "SW956K",
-             "year": 2024, "price": 1450000000, "status": "available",
-             "description": "Wheel loader 5 ton, ideal untuk quarry & konstruksi.",
-             "specs": {"bucket_capacity": "3.0 m³", "rated_load": "5000 kg",
-                       "engine": "Weichai WD10G220E23", "power": "162 kW"},
-             "images": ["https://images.unsplash.com/photo-1553969923-bbf0cac2666b?w=1200"]},
+             "specs": {"operating_weight": "36500 kg", "bucket_capacity": "1.9 m³", "engine": "Mitsubishi 6D34", "power": "202 kW", "max_dig_depth": "7420 mm"},
+             "images": [IMG_LARGE]},
+            {"name": "SANY SY500H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY500H",
+             "year": 2024, "price": 3750000000, "status": "available",
+             "description": "Ekskavator tambang 50 ton dengan boom heavy-duty.",
+             "specs": {"operating_weight": "50000 kg", "bucket_capacity": "2.6 m³", "engine": "Isuzu 6WG1", "power": "300 kW"},
+             "images": [IMG_LARGE]},
+            {"name": "SANY SY750H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY750H",
+             "year": 2024, "price": 6800000000, "status": "available",
+             "description": "Ekskavator 75 ton untuk quarry dan tambang kelas menengah.",
+             "specs": {"operating_weight": "75000 kg", "bucket_capacity": "4.6 m³", "engine": "Cummins QSX15", "power": "447 kW"},
+             "images": [IMG_LARGE2]},
+            {"name": "SANY SY870H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY870H",
+             "year": 2024, "price": 7900000000, "status": "available",
+             "description": "Ekskavator 87 ton, produktivitas tinggi untuk overburden removal.",
+             "specs": {"operating_weight": "87000 kg", "bucket_capacity": "5.4 m³", "engine": "Cummins QSX15", "power": "522 kW"},
+             "images": [IMG_LARGE2]},
+            {"name": "SANY SY1250H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY1250H",
+             "year": 2024, "price": 14500000000, "status": "available",
+             "description": "Andalan untuk pemindahan material tambang skala besar.",
+             "specs": {"operating_weight": "125000 kg", "bucket_capacity": "7.5 m³", "engine": "Cummins QSK23", "power": "567 kW"},
+             "images": [IMG_LARGE2]},
+            {"name": "SANY SY2000H", "category": "Excavator", "subcategory": "Large / Mining Excavator", "model_code": "SY2000H",
+             "year": 2024, "price": 28000000000, "status": "available",
+             "description": "Unit super besar kelas berat untuk produktivitas tambang ekstra ekstrem.",
+             "specs": {"operating_weight": "200000 kg", "bucket_capacity": "12.0 m³", "engine": "Cummins QSK38", "power": "940 kW"},
+             "images": [IMG_LARGE]},
+            {"name": "SANY SY3000E", "category": "Excavator", "subcategory": "Electric Excavator", "model_code": "SY3000E",
+             "year": 2025, "price": 45000000000, "status": "available",
+             "description": "Ekskavator tambang elektrik berkapasitas masif untuk mendukung sustainable mining.",
+             "specs": {"operating_weight": "300000 kg", "bucket_capacity": "16.0 m³", "powertrain": "Listrik 1500 kW", "emisi": "Zero tailpipe"},
+             "images": [IMG_LARGE]},
+            {"name": "SANY SR235MV", "category": "Drilling Rig", "subcategory": "Drilling Rig", "model_code": "SR235MV",
+             "year": 2025, "price": 9500000000, "status": "available",
+             "description": "Mesin bor pemancang untuk fondasi dalam dan paku bumi diameter menengah.",
+             "specs": {"max_torque": "235 kNm", "max_drill_diameter": "2000 mm", "max_drill_depth": "65 m", "engine": "Cummins QSL9"},
+             "images": [IMG_RIG]},
+            {"name": "SANY SR285MV", "category": "Drilling Rig", "subcategory": "Drilling Rig", "model_code": "SR285MV",
+             "year": 2025, "price": 11800000000, "status": "available",
+             "description": "Rotary drilling rig serbaguna untuk infrastruktur jembatan dan gedung tinggi.",
+             "specs": {"max_torque": "285 kNm", "max_drill_diameter": "2300 mm", "max_drill_depth": "88 m", "engine": "Cummins QSL9"},
+             "images": [IMG_RIG2]},
+            {"name": "SANY SR405R", "category": "Drilling Rig", "subcategory": "Drilling Rig", "model_code": "SR405R",
+             "year": 2024, "price": 16500000000, "status": "available",
+             "description": "Drilling rig kelas besar untuk pekerjaan fondasi ekstrem.",
+             "specs": {"max_torque": "405 kNm", "max_drill_diameter": "2800 mm", "max_drill_depth": "103 m", "engine": "Cummins QSZ13"},
+             "images": [IMG_RIG]},
+            {"name": "SANY SYL956H", "category": "Wheel Loader", "subcategory": "Wheel Loader", "model_code": "SYL956H",
+             "year": 2025, "price": 1450000000, "status": "available",
+             "description": "Wheel loader kelas 5 ton paling umum di pasar Indonesia untuk stockpile tambang, perkebunan sawit, dan pabrik semen.",
+             "specs": {"rated_load": "5000 kg", "bucket_capacity": "3.0 m³", "engine": "Weichai WP10G220E343", "power": "162 kW"},
+             "images": [IMG_LOADER]},
         ]
-        for u in units_seed:
-            await db.units.insert_one({"id": new_id(), **u, "created_at": now_iso()})
+        for un in units_seed:
+            await db.units.insert_one({"id": new_id(), **un, "created_at": now_iso()})
 
     # Spareparts
     if await db.spareparts.count_documents({}) == 0:

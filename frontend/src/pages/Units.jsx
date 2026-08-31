@@ -9,10 +9,15 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useAuth } from "../context/AuthContext";
 
-const CATS = ["Excavator", "Dump Truck", "Crane", "Loader", "Bulldozer"];
+const CATS = ["Excavator", "Drilling Rig", "Wheel Loader"];
+const SUBCATS = {
+  "Excavator": ["Small Excavator", "Medium Excavator", "Large / Mining Excavator", "Electric Excavator"],
+  "Drilling Rig": ["Drilling Rig"],
+  "Wheel Loader": ["Wheel Loader"],
+};
 const STATUSES = ["available", "rented", "sold", "maintenance"];
 
-const empty = () => ({ name: "", category: "Excavator", model_code: "", year: 2026, price: 0, status: "available", description: "", specs: {}, images: [] });
+const empty = () => ({ name: "", category: "Excavator", subcategory: "Small Excavator", model_code: "", year: 2026, price: 0, status: "available", description: "", specs: {}, images: [] });
 
 export default function Units() {
   const { hasRole } = useAuth();
@@ -79,7 +84,7 @@ export default function Units() {
             </div>
             <div className="p-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] tracking-widest uppercase text-neutral-500">{u.category} · {u.model_code}</span>
+                <span className="font-mono text-[10px] tracking-widest uppercase text-neutral-500">{u.category}{u.subcategory ? ` · ${u.subcategory}` : ""} · {u.model_code}</span>
                 <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 ${
                   u.status === "available" ? "bg-emerald-50 text-emerald-700" :
                   u.status === "rented" ? "bg-amber-50 text-amber-700" :
@@ -122,12 +127,16 @@ export default function Units() {
             <div className="p-6 space-y-4">
               <Input placeholder="Nama unit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="unit-name-input" className="rounded-none" />
               <div className="grid grid-cols-2 gap-3">
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v, subcategory: (SUBCATS[v] || [])[0] || "" })}>
                   <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                   <SelectContent>{CATS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
-                <Input placeholder="Model code" value={form.model_code} onChange={(e) => setForm({ ...form, model_code: e.target.value })} data-testid="unit-model-input" className="rounded-none" />
+                <Select value={form.subcategory || ""} onValueChange={(v) => setForm({ ...form, subcategory: v })}>
+                  <SelectTrigger className="rounded-none" data-testid="unit-subcategory-select"><SelectValue placeholder="Subkategori" /></SelectTrigger>
+                  <SelectContent>{(SUBCATS[form.category] || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
+              <Input placeholder="Model code (mis: SY215C)" value={form.model_code} onChange={(e) => setForm({ ...form, model_code: e.target.value })} data-testid="unit-model-input" className="rounded-none" />
               <div className="grid grid-cols-3 gap-3">
                 <Input type="number" placeholder="Tahun" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className="rounded-none" />
                 <Input type="number" placeholder="Harga (IDR)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} data-testid="unit-price-input" className="rounded-none" />

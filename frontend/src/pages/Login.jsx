@@ -39,9 +39,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-br from-neutral-950/80 via-neutral-950/40 to-[#E60012]/30" />
         <div className="relative h-full flex flex-col justify-between p-12">
           <Link to="/" className="flex items-center gap-3" data-testid="login-logo-home">
-            <div className="w-8 h-8 bg-[#E60012] flex items-center justify-center">
-              <div className="w-3 h-3 bg-white" />
-            </div>
+            <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white" />
             <span className="font-display font-black tracking-tight text-lg">SANY <span className="text-[#E60012]">PERKASA</span></span>
           </Link>
           <div>

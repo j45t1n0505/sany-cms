@@ -41,9 +41,7 @@ export default function DashboardLayout() {
       <aside className="w-64 bg-neutral-950 text-white flex flex-col fixed h-screen border-r border-white/5">
         <div className="p-6 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#E60012] flex items-center justify-center">
-              <div className="w-3 h-3 bg-white" />
-            </div>
+            <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white shrink-0" />
             <div>
               <div className="font-display font-black tracking-tight text-sm leading-none">SANY <span className="text-[#E60012]">PERKASA</span></div>
               <div className="font-mono text-[9px] tracking-widest uppercase text-white/40 mt-1">CMS v2026</div>

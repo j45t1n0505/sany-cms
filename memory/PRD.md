@@ -17,6 +17,8 @@ Web aplikasi Content Management System (CMS) tingkat perusahaan untuk "SANY PERK
 - Warehouse Staff: spareparts & stock mutation only
 
 ## Implemented (2026-08-31)
+- [x] Branding: logo SANY PERKASA asli di nav landing, login, sidebar dashboard + favicon (logo.png di public/)
+- [x] Katalog sesuai lini resmi distributor: 12 Ekskavator (Small SY55C/SY75C/SY135C, Medium SY205C/SY215C, Large SY365H–SY2000H, Electric SY3000E), 3 Drilling Rig (SR235MV/SR285MV/SR405R), Wheel Loader SYL956H + field subkategori
 - [x] Cinematic dark landing page (hero, stats, marquee partner, module grid, product bento, CTA) dengan Framer Motion masif
 - [x] Login page (dark split layout) + JWT auth + Protected routes
 - [x] Dashboard Overview: 6 stat cards, sales trend line chart, unit status donut, kategori bar chart, low-stock panel

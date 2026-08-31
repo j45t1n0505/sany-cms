@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Truck, Wrench, Users, BarChart3, Zap, Shield, Building2, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
 
-const HERO_IMG = "https://images.unsplash.com/photo-1630288214173-a119cf823388?crop=entropy&cs=srgb&fm=jpg&w=1920&q=85";
+const HERO_IMG = "https://images.unsplash.com/photo-1495036019936-220b29b930ea?crop=entropy&cs=srgb&fm=jpg&w=1920&q=85";
 
 const stats = [
   { k: "12+", l: "Tahun Melayani Industri" },
@@ -13,10 +13,10 @@ const stats = [
 ];
 
 const products = [
-  { name: "Excavator SY215C", cat: "EXCAVATOR", img: "https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200&q=80", tag: "Best Seller" },
-  { name: "Mining Dump Truck SKT90S", cat: "DUMP TRUCK", img: "https://images.unsplash.com/photo-1573497019236-17f8177b81e8?w=1200&q=80", tag: "60 Ton Payload" },
-  { name: "Truck Crane STC750", cat: "CRANE", img: "https://images.unsplash.com/photo-1581094488379-6a10d04c0f04?w=1200&q=80", tag: "75 Ton Lift" },
-  { name: "Wheel Loader SW956K", cat: "LOADER", img: "https://images.unsplash.com/photo-1553969923-bbf0cac2666b?w=1200&q=80", tag: "3.0 m³" },
+  { name: "Excavator SY215C", cat: "MEDIUM EXCAVATOR", img: "https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200&q=80", tag: "Paling Populer" },
+  { name: "Mining Excavator SY1250H", cat: "LARGE EXCAVATOR", img: "https://images.unsplash.com/photo-1523848309072-c199db53f137?w=1200&q=80", tag: "Tambang Skala Besar" },
+  { name: "Drilling Rig SR405R", cat: "PILING MACHINERY", img: "https://images.unsplash.com/photo-1562237548-3c36707230ce?w=1200&q=80", tag: "Fondasi Dalam" },
+  { name: "Wheel Loader SYL956H", cat: "WHEEL LOADER", img: "https://images.unsplash.com/photo-1629807473015-41699c4471b5?w=1200&q=80", tag: "Kelas 5 Ton" },
 ];
 
 const modules = [
@@ -37,9 +37,7 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-neutral-950/70 border-b border-white/5">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#E60012] flex items-center justify-center">
-              <div className="w-3 h-3 bg-white" />
-            </div>
+            <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white" />
             <span className="font-display font-black tracking-tight text-white text-lg">SANY <span className="text-[#E60012]">PERKASA</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-widest text-white/70">
@@ -195,7 +193,7 @@ export default function Landing() {
             <div>
               <div className="font-mono text-xs tracking-[0.3em] uppercase text-[#E60012] mb-6">/ 02 · Katalog Unit</div>
               <h2 className="font-display font-black text-5xl lg:text-6xl tracking-tight leading-none">
-                Alat berat<br />generasi terbaru.
+                Tiga lini produk<br />unggulan SANY.
               </h2>
             </div>
             <Link to="/login" data-testid="cta-catalog-view">
