@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Truck, Wrench, Users, BarChart3, Zap, Shield, Building2, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
 
-const HERO_IMG = "https://images.unsplash.com/photo-1495036019936-220b29b930ea?crop=entropy&cs=srgb&fm=jpg&w=1920&q=85";
+const HERO_IMG = "/units/fleet.jpg";
 
 const stats = [
   { k: "12+", l: "Tahun Melayani Industri" },
@@ -13,10 +13,10 @@ const stats = [
 ];
 
 const products = [
-  { name: "Excavator SY215C", cat: "MEDIUM EXCAVATOR", img: "https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200&q=80", tag: "Paling Populer" },
-  { name: "Mining Excavator SY1250H", cat: "LARGE EXCAVATOR", img: "https://images.unsplash.com/photo-1523848309072-c199db53f137?w=1200&q=80", tag: "Tambang Skala Besar" },
-  { name: "Drilling Rig SR405R", cat: "PILING MACHINERY", img: "https://images.unsplash.com/photo-1562237548-3c36707230ce?w=1200&q=80", tag: "Fondasi Dalam" },
-  { name: "Wheel Loader SYL956H", cat: "WHEEL LOADER", img: "https://images.unsplash.com/photo-1629807473015-41699c4471b5?w=1200&q=80", tag: "Kelas 5 Ton" },
+  { name: "Excavator SY215C", cat: "MEDIUM EXCAVATOR", img: "/units/sy215c.jpg", tag: "Paling Populer" },
+  { name: "Mining Excavator SY1250H", cat: "LARGE EXCAVATOR", img: "/units/large1.jpg", tag: "Tambang Skala Besar" },
+  { name: "Drilling Rig SR405R", cat: "PILING MACHINERY", img: "/units/rig1.jpg", tag: "Fondasi Dalam" },
+  { name: "Wheel Loader SYL956H", cat: "WHEEL LOADER", img: "/units/loader.jpg", tag: "Kelas 5 Ton" },
 ];
 
 const modules = [

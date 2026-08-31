@@ -45,6 +45,12 @@ service_requests, part_orders, rcs_sessions
 - Leaflet + OpenStreetMap (tanpa API key)
 - Jitsi Meet (room RCS, embed iframe)
 
+## Aset Gambar (31 Aug 2026)
+- Semua foto alat berat kini **foto asli unit SANY** dari Wikimedia Commons (lisensi bebas), diunduh & disimpan lokal di `/app/frontend/public/units/*.jpg` (width 1400, JPEG q82) — tidak hotlink, tidak AI-generated.
+- Mapping model → file diatur di `seed_data()` (IMG_SMALL/IMG_MED/IMG_LARGE/IMG_RIG/IMG_LOADER) dan dipakai juga di Landing.jsx + Login.jsx.
+- Catatan: foto drilling rig (`rig1.jpg`, `rig2.jpg`) adalah rotary drilling rig asli non-SANY karena Commons belum punya foto rig SANY.
+- Favicon & logo: ikon panah SANY dari user (`favicon.ico`, `logo.png`, `logo192.png`, `logo512.png`).
+
 ## MOCKED / Simulasi
 - Telemetry GPS **disimulasikan** server-side setiap 20 detik (`TELEMETRY_SIMULATION=true` di backend/.env). Perangkat GPS asli cukup POST ke `/api/telemetry/ingest`.
 - Daftar teknisi RCS/servis = list statis di backend.

@@ -32,7 +32,7 @@ export default function Login() {
       {/* Left side - image */}
       <div className="hidden lg:block relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1575281923032-f40d94ef6160?w=1600&q=80"
+          src="/units/med2.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />

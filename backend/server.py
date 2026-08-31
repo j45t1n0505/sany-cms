@@ -1211,14 +1211,15 @@ async def seed_data():
 
     # Units
     if await db.units.count_documents({}) == 0:
-        IMG_SMALL = "https://images.unsplash.com/photo-1605286603787-f58f93e14992?w=1200&q=80"
-        IMG_MED = "https://images.unsplash.com/photo-1630288214173-a119cf823388?w=1200&q=80"
-        IMG_MED2 = "https://images.unsplash.com/photo-1575281923032-f40d94ef6160?w=1200&q=80"
-        IMG_LARGE = "https://images.unsplash.com/photo-1587919968590-fbc98cea6c9a?w=1200&q=80"
-        IMG_LARGE2 = "https://images.unsplash.com/photo-1523848309072-c199db53f137?w=1200&q=80"
-        IMG_RIG = "https://images.unsplash.com/photo-1562237548-3c36707230ce?w=1200&q=80"
-        IMG_RIG2 = "https://images.unsplash.com/photo-1562237553-36ad661d6f2c?w=1200&q=80"
-        IMG_LOADER = "https://images.unsplash.com/photo-1629807473015-41699c4471b5?w=1200&q=80"
+        IMG_SMALL = "/units/sy55c.jpg"
+        IMG_MED = "/units/sy215c.jpg"
+        IMG_MED2 = "/units/med1.jpg"
+        IMG_LARGE = "/units/large1.jpg"
+        IMG_LARGE2 = "/units/large3.jpg"
+        IMG_ELECTRIC = "/units/large2.jpg"
+        IMG_RIG = "/units/rig1.jpg"
+        IMG_RIG2 = "/units/rig2.jpg"
+        IMG_LOADER = "/units/loader.jpg"
         units_seed = [
             {"name": "SANY SY55C", "category": "Excavator", "subcategory": "Small Excavator", "model_code": "SY55C",
              "year": 2025, "price": 685000000, "status": "available",
@@ -1279,7 +1280,7 @@ async def seed_data():
              "year": 2025, "price": 45000000000, "status": "available",
              "description": "Ekskavator tambang elektrik berkapasitas masif untuk mendukung sustainable mining.",
              "specs": {"operating_weight": "300000 kg", "bucket_capacity": "16.0 m³", "powertrain": "Listrik 1500 kW", "emisi": "Zero tailpipe"},
-             "images": [IMG_LARGE]},
+             "images": [IMG_ELECTRIC]},
             {"name": "SANY SR235MV", "category": "Drilling Rig", "subcategory": "Drilling Rig", "model_code": "SR235MV",
              "year": 2025, "price": 9500000000, "status": "available",
              "description": "Mesin bor pemancang untuk fondasi dalam dan paku bumi diameter menengah.",
