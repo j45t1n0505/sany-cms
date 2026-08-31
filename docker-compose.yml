@@ -1,0 +1,37 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: sanyperkasa-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  backend:
+    build: ./backend
+    container_name: sanyperkasa-backend
+    restart: unless-stopped
+    environment:
+      MONGO_URL: "mongodb://mongo:27017"
+      DB_NAME: "sany_perkasa"
+      CORS_ORIGINS: "*"
+      JWT_SECRET: "ganti-dengan-64-karakter-acak-milik-anda"
+      ADMIN_EMAIL: "j45t1n0505@gmail.com"
+      ADMIN_PASSWORD: "SanyAdmin2026!"
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mongo
+
+  frontend:
+    build: ./frontend
+    container_name: sanyperkasa-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
