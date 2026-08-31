@@ -561,7 +561,11 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "is_deleted": False,
         "created_at": now_iso(),
     })
-    return {"path": result["path"], "url": f"/api/files/{result['path']}"}
+    return {
+        "path": result["path"],
+        "url": f"/api/files/{result['path']}",
+        "public_url": f"/api/public-files/{result['path']}",
+    }
 
 @api.get("/files/{path:path}")
 async def download_file(path: str, auth: Optional[str] = Query(None), authorization: Optional[str] = Header(None)):
@@ -1184,6 +1188,18 @@ async def telemetry_simulator():
         except Exception as e:
             logging.getLogger(__name__).warning(f"Simulator tick failed: {e}")
 
+
+@api.get("/public-files/{path:path}")
+async def public_file(path: str):
+    record = await db.files.find_one({"storage_path": path, "is_deleted": False})
+    if not record:
+        raise HTTPException(status_code=404, detail="File not found")
+    data, ct = get_object(path)
+    return FastResponse(
+        content=data,
+        media_type=record.get("content_type", ct),
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 # ---------------- Seed ----------------
 async def seed_data():

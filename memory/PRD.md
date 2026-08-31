@@ -56,8 +56,11 @@ service_requests, part_orders, rcs_sessions
 - Daftar teknisi RCS/servis = list statis di backend.
 - Link repair manual mengarah ke sanyglobal.com (belum ada hosting PDF).
 
+## Update 31 Aug 2026 — Upload Foto Unit
+- Form Katalog Unit kini bisa **unggah foto dari perangkat** (PNG/JPG/JPEG/WEBP, multi-file, maks 10MB/file) ke Emergent Object Storage, dengan preview thumbnail + tombol hapus, dan tetap mendukung tempel URL manual.
+- Endpoint baru `GET /api/public-files/{path}` (tanpa auth, cache 24 jam) agar `<img>` katalog bisa menampilkan foto hasil unggahan; `POST /api/uploads` sekarang mengembalikan `public_url`.
+
 ## Backlog
-- P0: Upload file (drag & drop) untuk form Katalog Unit (saat ini masih URL teks)
 - P1: Hosting PDF repair manual per unit/sparepart (Object Storage)
 - P1: SSE/WebSocket menggantikan 3 polling interval (tracking 15s, geofence 20s, bell 20s)
 - P2: Geofence polygon (saat ini circle), notifikasi WhatsApp

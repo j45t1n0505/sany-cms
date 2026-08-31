@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Upload, Loader2 } from "lucide-react";
 import api, { formatApiError, formatIDR } from "../lib/api";
 import { PageHeader } from "../components/PageBits";
 import { Button } from "../components/ui/button";
@@ -28,6 +28,38 @@ export default function Units() {
   const [form, setForm] = useState(empty());
   const [specsText, setSpecsText] = useState("");
   const [imgText, setImgText] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  const imageList = imgText.split("\n").map((s) => s.trim()).filter(Boolean);
+
+  const uploadImages = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const valid = files.filter((f) => allowed.includes(f.type.toLowerCase()));
+    if (valid.length !== files.length) toast.error("Hanya format PNG, JPG/JPEG, atau WEBP");
+    if (!valid.length) return;
+    setUploading(true);
+    const uploaded = [];
+    for (const f of valid) {
+      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} lebih dari 10MB`); continue; }
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const r = await api.post("/uploads", fd, { headers: { "Content-Type": "multipart/form-data" } });
+        uploaded.push(r.data.public_url);
+      } catch (err) { toast.error(formatApiError(err.response?.data?.detail)); }
+    }
+    if (uploaded.length) {
+      setImgText((prev) => [...prev.split("\n").map((s) => s.trim()).filter(Boolean), ...uploaded].join("\n"));
+      toast.success(`${uploaded.length} foto terunggah`);
+    }
+    setUploading(false);
+  };
+
+  const removeImage = (url) => setImgText(imageList.filter((u) => u !== url).join("\n"));
 
   const load = () => api.get("/units").then((r) => setItems(r.data));
   useEffect(() => { load(); }, []);
@@ -151,8 +183,47 @@ export default function Units() {
                 <Textarea value={specsText} onChange={(e) => setSpecsText(e.target.value)} placeholder="operating_weight: 21500 kg&#10;power: 129 kW" className="rounded-none font-mono text-xs" rows={5} />
               </div>
               <div>
-                <div className="font-mono text-[10px] tracking-widest uppercase text-neutral-500 mb-1">URL Galeri Foto (satu per baris)</div>
-                <Textarea value={imgText} onChange={(e) => setImgText(e.target.value)} placeholder="https://..." className="rounded-none font-mono text-xs" rows={3} />
+                <div className="font-mono text-[10px] tracking-widest uppercase text-neutral-500 mb-2">Galeri Foto</div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  multiple
+                  onChange={uploadImages}
+                  className="hidden"
+                  data-testid="unit-image-file-input"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  data-testid="unit-upload-image-btn"
+                  className="w-full rounded-none h-11 font-mono text-[10px] uppercase tracking-widest border-dashed"
+                >
+                  {uploading
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengunggah…</>
+                    : <><Upload className="w-4 h-4 mr-2" /> Unggah dari perangkat (PNG / JPG / WEBP)</>}
+                </Button>
+
+                {imageList.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-3" data-testid="unit-image-previews">
+                    {imageList.map((url) => (
+                      <div key={url} className="relative aspect-square bg-neutral-100 border border-neutral-200 group">
+                        <img src={url} alt="foto unit" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeImage(url)}
+                          data-testid="unit-remove-image-btn"
+                          className="absolute top-1 right-1 w-6 h-6 bg-neutral-950/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="font-mono text-[10px] tracking-widest uppercase text-neutral-500 mt-4 mb-1">Atau tempel URL foto (satu per baris)</div>
+                <Textarea value={imgText} onChange={(e) => setImgText(e.target.value)} placeholder="https://..." data-testid="unit-images-textarea" className="rounded-none font-mono text-xs" rows={3} />
               </div>
             </div>
             <div className="p-6 border-t border-neutral-200 flex justify-end gap-3">
