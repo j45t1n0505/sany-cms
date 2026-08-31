@@ -13,6 +13,11 @@ import CRM from "./pages/CRM";
 import Quotations from "./pages/Quotations";
 import Rentals from "./pages/Rentals";
 import Users from "./pages/Users";
+import Tracking from "./pages/Tracking";
+import Geofencing from "./pages/Geofencing";
+import ServiceRequests from "./pages/ServiceRequests";
+import PartsPortal from "./pages/PartsPortal";
+import RCS from "./pages/RCS";
 
 function Protected({ children }) {
   const { user, ready } = useAuth();
@@ -52,6 +57,11 @@ function App() {
               <Route path="crm" element={<CRM />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="rentals" element={<Rentals />} />
+              <Route path="tracking" element={<Tracking />} />
+              <Route path="geofencing" element={<Geofencing />} />
+              <Route path="service" element={<ServiceRequests />} />
+              <Route path="parts-portal" element={<PartsPortal />} />
+              <Route path="rcs" element={<RCS />} />
               <Route path="users" element={<Users />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,13 +1,21 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Truck, Wrench, Users, FileText, CalendarRange, Shield, LogOut,
+  Satellite, ShieldAlert, LifeBuoy, PackageSearch, Headset, Bell, Menu, X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import api from "../lib/api";
 import { Button } from "./ui/button";
 
 const items = [
   { to: "/app", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/app/tracking", label: "Aset Real-Time", icon: Satellite },
+  { to: "/app/geofencing", label: "Geofencing", icon: ShieldAlert },
+  { to: "/app/service", label: "Servis Instan", icon: LifeBuoy },
+  { to: "/app/parts-portal", label: "Katalog Parts", icon: PackageSearch },
+  { to: "/app/rcs", label: "Konsultasi RCS", icon: Headset },
   { to: "/app/units", label: "Katalog Unit", icon: Truck },
   { to: "/app/spareparts", label: "Suku Cadang", icon: Wrench, roles: ["warehouse_staff", "sales_manager"] },
   { to: "/app/crm", label: "CRM & Klien", icon: Users, roles: ["sales_manager"] },
@@ -23,6 +31,18 @@ function roleLabel(r) {
 export default function DashboardLayout() {
   const { user, logout, hasRole } = useAuth();
   const nav = useNavigate();
+  const [unread, setUnread] = useState(0);
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => {
+    const poll = () =>
+      api.get("/alerts", { params: { unread_only: true } })
+        .then((r) => setUnread(r.data.length))
+        .catch(() => {});
+    poll();
+    const t = setInterval(poll, 20000);
+    return () => clearInterval(t);
+  }, []);
 
   const doLogout = async () => {
     await logout();
@@ -38,7 +58,17 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen flex bg-[#f6f6f4]">
       {/* Sidebar */}
-      <aside className="w-64 bg-neutral-950 text-white flex flex-col fixed h-screen border-r border-white/5">
+      <button
+        onClick={() => setNavOpen((v) => !v)}
+        data-testid="mobile-nav-toggle"
+        className="lg:hidden fixed top-4 left-4 z-[60] w-11 h-11 bg-neutral-950 text-white grid place-items-center"
+      >
+        {navOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+      {navOpen && (
+        <div onClick={() => setNavOpen(false)} className="lg:hidden fixed inset-0 bg-black/60 z-40" />
+      )}
+      <aside className={`w-64 bg-neutral-950 text-white flex flex-col fixed h-screen border-r border-white/5 z-50 transition-transform duration-300 ${navOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="p-6 border-b border-white/5">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white shrink-0" />
@@ -49,7 +79,21 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5">
+        <button
+          onClick={() => nav("/app/geofencing")}
+          data-testid="alert-bell-btn"
+          className="mx-3 mt-3 flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+        >
+          <Bell className={`w-4 h-4 ${unread ? "text-[#E60012] animate-pulse" : ""}`} />
+          <span>Peringatan</span>
+          {unread > 0 && (
+            <span data-testid="alert-unread-count" className="ml-auto bg-[#E60012] text-white px-1.5 py-0.5 text-[9px]">
+              {unread}
+            </span>
+          )}
+        </button>
+
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {visibleItems.map((i) => (
             <NavLink
               key={i.to}
@@ -92,13 +136,13 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Content */}
-      <main className="flex-1 ml-64 min-w-0">
+      <main className="flex-1 lg:ml-64 min-w-0">
         <motion.div
           key={typeof window !== "undefined" ? window.location.pathname : ""}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="p-8 lg:p-10 max-w-[1600px]"
+          className="p-5 pt-20 lg:p-10 max-w-[1600px]"
         >
           <Outlet />
         </motion.div>

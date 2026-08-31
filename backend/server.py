@@ -5,12 +5,21 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import os
+import re
+import math
+import random
+import asyncio
+import ipaddress
 import uuid
 import logging
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Any
 
 import bcrypt
+import httpx
 import jwt
 from bson import ObjectId
 from fastapi import (
@@ -574,6 +583,608 @@ async def download_file(path: str, auth: Optional[str] = Query(None), authorizat
     data, ct = get_object(path)
     return FastResponse(content=data, media_type=record.get("content_type", ct))
 
+# ================= EMAIL (Emergent managed Resend) =================
+EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY")
+EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "SANY PERKASA")
+EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
+
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+
+def _host_ok(host: str) -> bool:
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+
+def _same_site(shown: str, real: str) -> bool:
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href")
+            self._text = []
+
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text)))
+            self._href, self._text = None, []
+
+
+def _assert_safe_email(subject: str, html: str) -> None:
+    scan = _EmailScan(); scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms or input fields in email (G2)")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks the recipient for credentials: {p!r} (G2)")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError(f"Email links/assets must be absolute https: {url!r} (G3)")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError(f"Shortened, numeric-host or credential-bearing URL: {url!r} (G3)")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if not real:
+            continue
+        for m in _HOSTISH.finditer(text):
+            if not _same_site(m.group(1).lower(), real):
+                raise ValueError(f"Anchor text {m.group(1)!r} != real link host {real!r} (G3)")
+
+
+async def send_email(*, to: str, subject: str, html: str) -> Optional[str]:
+    _assert_safe_email(subject, html)
+    if not EMAIL_KEY:
+        logging.getLogger(__name__).warning("EMERGENT_EMAIL_KEY missing; email skipped")
+        return None
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    if EMAIL_REPLY_TO:
+        payload["contact_email"] = EMAIL_REPLY_TO
+    try:
+        async with httpx.AsyncClient(timeout=30) as hc:
+            resp = await hc.post(
+                f"{EMAIL_BASE_URL}/api/v1/email/send",
+                headers={"X-Email-Key": EMAIL_KEY},
+                json=payload,
+            )
+        resp.raise_for_status()
+        return resp.json().get("id")
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Email send error: {e}")
+        return None
+
+
+def _geofence_alert_html(unit_name: str, fence_name: str, event: str, lat: float, lng: float, when: str) -> str:
+    ev = "KELUAR dari" if event == "exit" else "MASUK ke"
+    return (
+        '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#111">'
+        f'<div style="background:#E60012;color:#fff;padding:12px 16px;font-weight:bold">PERINGATAN GEOFENCE</div>'
+        f'<p>Unit <strong>{escape(unit_name)}</strong> terdeteksi <strong>{ev}</strong> area '
+        f'<strong>{escape(fence_name)}</strong>.</p>'
+        f'<p style="font-family:monospace;font-size:13px">Koordinat: {lat:.5f}, {lng:.5f}<br/>Waktu: {escape(when)}</p>'
+        f'<p>Silakan buka dasbor Manajemen Aset Real-Time pada aplikasi CMS untuk melihat detail pergerakan unit.</p>'
+        f'<p style="font-size:12px;color:#888">Dikirim otomatis oleh {escape(EMAIL_FROM_NAME)} CMS. '
+        f'Kami tidak pernah meminta kata sandi Anda melalui email.</p>'
+        '</td></tr></table>'
+    )
+
+
+# ================= REAL-TIME ASSET MANAGEMENT / TELEMETRY =================
+class TelemetryIn(BaseModel):
+    unit_id: str
+    lat: float
+    lng: float
+    hm: Optional[float] = None
+    speed: float = 0
+    heading: float = 0
+    engine_on: bool = True
+    fuel_pct: Optional[float] = None
+
+
+class GeofenceIn(BaseModel):
+    name: str
+    unit_id: Optional[str] = None  # None = semua unit
+    center_lat: float
+    center_lng: float
+    radius_m: float
+    alert_on: str = "both"  # enter / exit / both
+    active: bool = True
+    notify_email: Optional[str] = None
+
+
+def haversine_m(lat1, lng1, lat2, lng2) -> float:
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+async def record_telemetry(unit_id: str, lat: float, lng: float, hm: float, speed: float,
+                           heading: float, engine_on: bool, fuel_pct: Optional[float]) -> dict:
+    unit = await db.units.find_one({"id": unit_id}, {"_id": 0, "name": 1, "id": 1})
+    if not unit:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    point = {
+        "id": new_id(), "unit_id": unit_id, "unit_name": unit["name"],
+        "lat": lat, "lng": lng, "hm": hm, "speed": speed, "heading": heading,
+        "engine_on": engine_on, "fuel_pct": fuel_pct, "recorded_at": now_iso(),
+    }
+    await db.telemetry.insert_one(dict(point))
+    await db.unit_state.update_one(
+        {"unit_id": unit_id},
+        {"$set": {k: v for k, v in point.items() if k != "id"}},
+        upsert=True,
+    )
+    await evaluate_geofences(unit_id, unit["name"], lat, lng)
+    point.pop("_id", None)
+    return point
+
+
+async def evaluate_geofences(unit_id: str, unit_name: str, lat: float, lng: float):
+    fences = await db.geofences.find(
+        {"active": True, "$or": [{"unit_id": unit_id}, {"unit_id": None}]}, {"_id": 0}
+    ).to_list(200)
+    for f in fences:
+        dist = haversine_m(lat, lng, f["center_lat"], f["center_lng"])
+        inside = dist <= f["radius_m"]
+        key = f"{f['id']}::{unit_id}"
+        prev = await db.geofence_state.find_one({"key": key})
+        was_inside = prev["inside"] if prev else inside
+        await db.geofence_state.update_one({"key": key}, {"$set": {"inside": inside}}, upsert=True)
+        if prev is None or was_inside == inside:
+            continue
+        event = "enter" if inside else "exit"
+        if f.get("alert_on", "both") not in ("both", event):
+            continue
+        alert = {
+            "id": new_id(), "geofence_id": f["id"], "geofence_name": f["name"],
+            "unit_id": unit_id, "unit_name": unit_name, "event": event,
+            "lat": lat, "lng": lng, "distance_m": round(dist), "read": False,
+            "created_at": now_iso(),
+        }
+        await db.geofence_alerts.insert_one(dict(alert))
+        to = f.get("notify_email") or os.environ.get("ADMIN_EMAIL")
+        if to:
+            last = await db.email_throttle.find_one({"key": key})
+            now_dt = datetime.now(timezone.utc)
+            recent = last and (now_dt - datetime.fromisoformat(last["at"])).total_seconds() < 600
+            if not recent:
+                await db.email_throttle.update_one({"key": key}, {"$set": {"at": now_dt.isoformat()}}, upsert=True)
+                await send_email(
+                to=to,
+                    subject=f"[SANY PERKASA] Peringatan Geofence: {unit_name} {event.upper()} {f['name']}",
+                    html=_geofence_alert_html(unit_name, f["name"], event, lat, lng, alert["created_at"]),
+                )
+
+
+@api.post("/telemetry/ingest")
+async def ingest_telemetry(data: TelemetryIn, _: dict = Depends(get_current_user)):
+    state = await db.unit_state.find_one({"unit_id": data.unit_id}, {"_id": 0})
+    hm = data.hm if data.hm is not None else (state or {}).get("hm", 0)
+    return await record_telemetry(data.unit_id, data.lat, data.lng, hm, data.speed,
+                                 data.heading, data.engine_on, data.fuel_pct)
+
+
+@api.get("/tracking/units")
+async def tracking_units(_: dict = Depends(get_current_user)):
+    units = await db.units.find({}, {"_id": 0}).to_list(1000)
+    states = {s["unit_id"]: s for s in await db.unit_state.find({}, {"_id": 0}).to_list(2000)}
+    out = []
+    for u in units:
+        s = states.get(u["id"])
+        if not s:
+            continue
+        out.append({
+            "unit_id": u["id"], "name": u["name"], "model_code": u.get("model_code"),
+            "category": u.get("category"), "status": u.get("status"),
+            "image": (u.get("images") or [None])[0],
+            "lat": s["lat"], "lng": s["lng"], "hm": round(s.get("hm", 0), 1),
+            "speed": s.get("speed", 0), "heading": s.get("heading", 0),
+            "engine_on": s.get("engine_on", False), "fuel_pct": s.get("fuel_pct"),
+            "recorded_at": s.get("recorded_at"),
+            "site": s.get("site", ""),
+        })
+    return out
+
+
+@api.get("/tracking/units/{unit_id}/history")
+async def tracking_history(unit_id: str, limit: int = 200, _: dict = Depends(get_current_user)):
+    rows = await db.telemetry.find({"unit_id": unit_id}, {"_id": 0}).sort("recorded_at", -1).to_list(limit)
+    return list(reversed(rows))
+
+
+@api.get("/geofences")
+async def list_geofences(_: dict = Depends(get_current_user)):
+    return await db.geofences.find({}, {"_id": 0}).to_list(500)
+
+
+@api.post("/geofences")
+async def create_geofence(data: GeofenceIn, _: dict = Depends(require_roles("sales_manager", "warehouse_staff"))):
+    doc = {"id": new_id(), **data.model_dump(), "created_at": now_iso()}
+    await db.geofences.insert_one(dict(doc))
+    doc.pop("_id", None)
+    return doc
+
+
+@api.put("/geofences/{gid}")
+async def update_geofence(gid: str, data: GeofenceIn, _: dict = Depends(require_roles("sales_manager", "warehouse_staff"))):
+    await db.geofences.update_one({"id": gid}, {"$set": data.model_dump()})
+    return await db.geofences.find_one({"id": gid}, {"_id": 0})
+
+
+@api.delete("/geofences/{gid}")
+async def delete_geofence(gid: str, _: dict = Depends(require_roles("sales_manager", "warehouse_staff"))):
+    r = await db.geofences.delete_one({"id": gid})
+    await db.geofence_state.delete_many({"key": {"$regex": f"^{gid}::"}})
+    return {"deleted": r.deleted_count}
+
+
+@api.get("/alerts")
+async def list_alerts(unread_only: bool = False, _: dict = Depends(get_current_user)):
+    q = {"read": False} if unread_only else {}
+    return await db.geofence_alerts.find(q, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+
+@api.post("/alerts/{aid}/read")
+async def read_alert(aid: str, _: dict = Depends(get_current_user)):
+    await db.geofence_alerts.update_one({"id": aid}, {"$set": {"read": True}})
+    return {"ok": True}
+
+
+@api.post("/alerts/read-all")
+async def read_all_alerts(_: dict = Depends(get_current_user)):
+    r = await db.geofence_alerts.update_many({"read": False}, {"$set": {"read": True}})
+    return {"updated": r.modified_count}
+
+
+# ================= SERVICE & MAINTENANCE =================
+SERVICE_FLOW = ["submitted", "assigned", "on_the_way", "in_progress", "completed", "closed"]
+
+TECHNICIANS = [
+    {"name": "Agus Priyanto", "phone": "+62 811 9001 221", "specialty": "Hydraulic & Undercarriage"},
+    {"name": "Dedi Kurniawan", "phone": "+62 812 9002 332", "specialty": "Engine & Powertrain"},
+    {"name": "Feri Santoso", "phone": "+62 813 9003 443", "specialty": "Electrical & ECU"},
+]
+
+
+class ServiceRequestIn(BaseModel):
+    unit_id: str
+    client_id: Optional[str] = None
+    issue_type: str  # engine / hydraulic / electrical / undercarriage / periodic
+    priority: str = "normal"  # low / normal / high / emergency
+    description: str
+    location: Optional[str] = ""
+    contact_phone: Optional[str] = ""
+    photos: List[str] = Field(default_factory=list)
+
+
+class ServiceRatingIn(BaseModel):
+    rating: int
+    review: Optional[str] = ""
+
+
+@api.get("/service-requests")
+async def list_service_requests(_: dict = Depends(get_current_user)):
+    return await db.service_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+
+@api.post("/service-requests")
+async def create_service_request(data: ServiceRequestIn, user: dict = Depends(get_current_user)):
+    unit = await db.units.find_one({"id": data.unit_id}, {"_id": 0})
+    if not unit:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    client_name = ""
+    if data.client_id:
+        c = await db.clients.find_one({"id": data.client_id}, {"_id": 0})
+        client_name = c["company"] if c else ""
+    ts = now_iso()
+    doc = {
+        "id": new_id(),
+        "ticket_no": f"SVC-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{new_id()[:5].upper()}",
+        **data.model_dump(),
+        "unit_name": unit["name"], "client_name": client_name,
+        "status": "submitted", "technician": None,
+        "timeline": [{"status": "submitted", "note": "Permintaan servis diterima sistem", "at": ts}],
+        "rating": None, "review": "",
+        "requested_by": user["name"], "requested_by_id": user["id"],
+        "created_at": ts, "updated_at": ts,
+    }
+    await db.service_requests.insert_one(dict(doc))
+    doc.pop("_id", None)
+    return doc
+
+
+@api.put("/service-requests/{sid}/status")
+async def update_service_status(sid: str, status: str, note: str = "",
+                                user: dict = Depends(require_roles("warehouse_staff", "sales_manager"))):
+    if status not in SERVICE_FLOW:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    sr = await db.service_requests.find_one({"id": sid})
+    if not sr:
+        raise HTTPException(status_code=404, detail="Service request not found")
+    ts = now_iso()
+    await db.service_requests.update_one(
+        {"id": sid},
+        {"$set": {"status": status, "updated_at": ts},
+         "$push": {"timeline": {"status": status, "note": note or f"Status diubah oleh {user['name']}", "at": ts}}},
+    )
+    return await db.service_requests.find_one({"id": sid}, {"_id": 0})
+
+
+@api.put("/service-requests/{sid}/assign")
+async def assign_technician(sid: str, technician_name: str,
+                            user: dict = Depends(require_roles("warehouse_staff", "sales_manager"))):
+    tech = next((t for t in TECHNICIANS if t["name"] == technician_name), None)
+    if not tech:
+        raise HTTPException(status_code=400, detail="Unknown technician")
+    ts = now_iso()
+    sr = await db.service_requests.find_one({"id": sid})
+    if not sr:
+        raise HTTPException(status_code=404, detail="Service request not found")
+    await db.service_requests.update_one(
+        {"id": sid},
+        {"$set": {"technician": tech, "status": "assigned", "updated_at": ts},
+         "$push": {"timeline": {"status": "assigned", "note": f"Mekanik {tech['name']} ditugaskan", "at": ts}}},
+    )
+    return await db.service_requests.find_one({"id": sid}, {"_id": 0})
+
+
+@api.put("/service-requests/{sid}/rating")
+async def rate_service(sid: str, data: ServiceRatingIn, user: dict = Depends(get_current_user)):
+    if not 1 <= data.rating <= 5:
+        raise HTTPException(status_code=400, detail="Rating harus 1-5")
+    sr = await db.service_requests.find_one({"id": sid})
+    if not sr:
+        raise HTTPException(status_code=404, detail="Service request not found")
+    if sr["status"] not in ("completed", "closed"):
+        raise HTTPException(status_code=400, detail="Servis belum selesai")
+    await db.service_requests.update_one(
+        {"id": sid},
+        {"$set": {"rating": data.rating, "review": data.review, "status": "closed", "updated_at": now_iso()},
+         "$push": {"timeline": {"status": "closed", "note": f"Dinilai {data.rating}/5 oleh {user['name']}", "at": now_iso()}}},
+    )
+    return await db.service_requests.find_one({"id": sid}, {"_id": 0})
+
+
+@api.get("/technicians")
+async def list_technicians(_: dict = Depends(get_current_user)):
+    return TECHNICIANS
+
+
+# ================= PART ORDERS & SHIPMENT TRACKING =================
+SHIPMENT_FLOW = ["ordered", "packed", "shipped", "in_transit", "delivered"]
+
+
+class PartOrderIn(BaseModel):
+    sparepart_id: str
+    quantity: int
+    client_id: Optional[str] = None
+    destination: str
+    notes: Optional[str] = ""
+
+
+@api.get("/part-orders")
+async def list_part_orders(_: dict = Depends(get_current_user)):
+    return await db.part_orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+
+@api.post("/part-orders")
+async def create_part_order(data: PartOrderIn, user: dict = Depends(get_current_user)):
+    sp = await db.spareparts.find_one({"id": data.sparepart_id}, {"_id": 0})
+    if not sp:
+        raise HTTPException(status_code=404, detail="Sparepart not found")
+    if data.quantity < 1:
+        raise HTTPException(status_code=400, detail="Kuantitas minimal 1")
+    client_name = ""
+    if data.client_id:
+        c = await db.clients.find_one({"id": data.client_id}, {"_id": 0})
+        client_name = c["company"] if c else ""
+    subtotal = sp["unit_price"] * data.quantity
+    tax = round(subtotal * 0.11, 2)
+    ts = now_iso()
+    doc = {
+        "id": new_id(),
+        "order_no": f"PO-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{new_id()[:5].upper()}",
+        **data.model_dump(),
+        "sparepart_name": sp["name"], "sku": sp["sku"], "unit_price": sp["unit_price"],
+        "client_name": client_name,
+        "subtotal": subtotal, "tax": tax, "total": round(subtotal + tax, 2),
+        "status": "ordered",
+        "tracking_no": f"SPX{new_id()[:10].upper()}",
+        "eta": (datetime.now(timezone.utc) + timedelta(days=4)).isoformat(),
+        "timeline": [{"status": "ordered", "note": "Pesanan diterima", "at": ts}],
+        "created_by": user["name"], "created_at": ts,
+    }
+    await db.part_orders.insert_one(dict(doc))
+    doc.pop("_id", None)
+    return doc
+
+
+@api.put("/part-orders/{oid}/status")
+async def update_part_order_status(oid: str, status: str,
+                                  user: dict = Depends(require_roles("warehouse_staff", "sales_manager"))):
+    if status not in SHIPMENT_FLOW:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    ts = now_iso()
+    o = await db.part_orders.find_one({"id": oid})
+    if not o:
+        raise HTTPException(status_code=404, detail="Order not found")
+    await db.part_orders.update_one(
+        {"id": oid},
+        {"$set": {"status": status},
+         "$push": {"timeline": {"status": status, "note": f"Diperbarui oleh {user['name']}", "at": ts}}},
+    )
+    return await db.part_orders.find_one({"id": oid}, {"_id": 0})
+
+
+# ================= RCS — REMOTE CONSULTATION =================
+class RcsSessionIn(BaseModel):
+    topic: str
+    unit_id: Optional[str] = None
+    technician_name: Optional[str] = ""
+    mode: str = "video"  # video / audio
+    scheduled_at: Optional[str] = None
+    description: Optional[str] = ""
+
+
+class RcsMessageIn(BaseModel):
+    text: Optional[str] = ""
+    attachment_url: Optional[str] = None
+    attachment_type: Optional[str] = None
+
+
+@api.get("/rcs/sessions")
+async def list_rcs(_: dict = Depends(get_current_user)):
+    return await db.rcs_sessions.find({}, {"_id": 0}).sort("created_at", -1).to_list(300)
+
+
+@api.post("/rcs/sessions")
+async def create_rcs(data: RcsSessionIn, user: dict = Depends(get_current_user)):
+    unit_name = ""
+    if data.unit_id:
+        u = await db.units.find_one({"id": data.unit_id}, {"_id": 0})
+        unit_name = u["name"] if u else ""
+    room = f"SANYPERKASA-RCS-{new_id()[:8].upper()}"
+    doc = {
+        "id": new_id(), **data.model_dump(), "unit_name": unit_name,
+        "room_name": room, "room_url": f"https://meet.jit.si/{room}",
+        "status": "scheduled" if data.scheduled_at else "open",
+        "messages": [],
+        "created_by": user["name"], "created_by_id": user["id"], "created_at": now_iso(),
+    }
+    await db.rcs_sessions.insert_one(dict(doc))
+    doc.pop("_id", None)
+    return doc
+
+
+@api.post("/rcs/sessions/{sid}/messages")
+async def add_rcs_message(sid: str, data: RcsMessageIn, user: dict = Depends(get_current_user)):
+    s = await db.rcs_sessions.find_one({"id": sid})
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not (data.text or data.attachment_url):
+        raise HTTPException(status_code=400, detail="Pesan kosong")
+    msg = {
+        "id": new_id(), "text": data.text or "", "attachment_url": data.attachment_url,
+        "attachment_type": data.attachment_type, "author": user["name"],
+        "author_role": user["role"], "at": now_iso(),
+    }
+    await db.rcs_sessions.update_one({"id": sid}, {"$push": {"messages": msg}})
+    return msg
+
+
+@api.put("/rcs/sessions/{sid}/status")
+async def update_rcs_status(sid: str, status: str, _: dict = Depends(get_current_user)):
+    if status not in ("scheduled", "open", "live", "closed"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    await db.rcs_sessions.update_one({"id": sid}, {"$set": {"status": status}})
+    return await db.rcs_sessions.find_one({"id": sid}, {"_id": 0})
+
+
+# ================= TELEMETRY SIMULATOR =================
+SITES = [
+    {"name": "Tambang Tabalong, Kalsel", "lat": -2.2050, "lng": 115.4000},
+    {"name": "Proyek Tol Cisumdawu, Jabar", "lat": -6.8400, "lng": 107.9500},
+    {"name": "Site Kideco, Paser Kaltim", "lat": -1.8500, "lng": 116.0500},
+    {"name": "Bendungan Karian, Banten", "lat": -6.4700, "lng": 106.2400},
+    {"name": "Quarry Rumpin, Bogor", "lat": -6.4200, "lng": 106.6300},
+]
+
+
+async def seed_telemetry():
+    if await db.unit_state.count_documents({}) > 0:
+        return
+    units = await db.units.find({}, {"_id": 0}).to_list(100)
+    for i, u in enumerate(units):
+        site = SITES[i % len(SITES)]
+        lat = site["lat"] + random.uniform(-0.02, 0.02)
+        lng = site["lng"] + random.uniform(-0.02, 0.02)
+        hm = round(random.uniform(120, 8200), 1)
+        engine = u.get("status") in ("rented", "available") and random.random() > 0.35
+        await db.unit_state.update_one(
+            {"unit_id": u["id"]},
+            {"$set": {
+                "unit_id": u["id"], "unit_name": u["name"], "lat": lat, "lng": lng, "hm": hm,
+                "speed": round(random.uniform(0, 6), 1) if engine else 0,
+                "heading": random.uniform(0, 360), "engine_on": engine,
+                "fuel_pct": round(random.uniform(25, 98), 1),
+                "site": site["name"], "recorded_at": now_iso(),
+            }},
+            upsert=True,
+        )
+        await db.telemetry.insert_one({
+            "id": new_id(), "unit_id": u["id"], "unit_name": u["name"], "lat": lat, "lng": lng,
+            "hm": hm, "speed": 0, "heading": 0, "engine_on": engine, "fuel_pct": 80,
+            "recorded_at": now_iso(),
+        })
+
+
+async def seed_geofences():
+    if await db.geofences.count_documents({}) > 0:
+        return
+    for s in SITES[:3]:
+        await db.geofences.insert_one({
+            "id": new_id(), "name": f"Zona {s['name']}", "unit_id": None,
+            "center_lat": s["lat"], "center_lng": s["lng"], "radius_m": 3000,
+            "alert_on": "both", "active": True,
+            "notify_email": os.environ.get("ADMIN_EMAIL"),
+            "created_at": now_iso(),
+        })
+
+
+async def telemetry_simulator():
+    while True:
+        try:
+            await asyncio.sleep(20)
+            states = await db.unit_state.find({"engine_on": True}, {"_id": 0}).to_list(200)
+            for s in states:
+                heading = (s.get("heading", 0) + random.uniform(-35, 35)) % 360
+                dist = random.uniform(40, 260)  # meter per tick
+                dlat = (dist * math.cos(math.radians(heading))) / 111320
+                dlng = (dist * math.sin(math.radians(heading))) / (111320 * math.cos(math.radians(s["lat"])))
+                hm = round(s.get("hm", 0) + 20 / 3600, 3)
+                fuel = max(3, round((s.get("fuel_pct") or 80) - random.uniform(0.02, 0.15), 2))
+                await record_telemetry(
+                    s["unit_id"], s["lat"] + dlat, s["lng"] + dlng, hm,
+                    round(random.uniform(1, 9), 1), heading, True, fuel,
+                )
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Simulator tick failed: {e}")
+
+
 # ---------------- Seed ----------------
 async def seed_data():
     # Users
@@ -784,8 +1395,15 @@ async def on_startup():
     await db.users.create_index("email", unique=True)
     await db.units.create_index("id", unique=True)
     await db.spareparts.create_index("sku")
+    await db.telemetry.create_index([("unit_id", 1), ("recorded_at", -1)])
+    await db.unit_state.create_index("unit_id", unique=True)
+    await db.geofence_state.create_index("key", unique=True)
     init_storage()
     await seed_data()
+    await seed_telemetry()
+    await seed_geofences()
+    if os.environ.get("TELEMETRY_SIMULATION", "true").lower() == "true":
+        asyncio.create_task(telemetry_simulator())
 
 @app.on_event("shutdown")
 async def on_shutdown():
