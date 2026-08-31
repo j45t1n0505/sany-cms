@@ -70,13 +70,18 @@ export default function DashboardLayout() {
       )}
       <aside className={`w-64 bg-neutral-950 text-white flex flex-col fixed h-screen border-r border-white/5 z-50 transition-transform duration-300 ${navOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="p-6 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white shrink-0" />
+          <button
+            onClick={() => { nav("/app"); setNavOpen(false); }}
+            data-testid="brand-home-btn"
+            title="Kembali ke Overview"
+            className="flex items-center gap-3 w-full text-left group"
+          >
+            <img src="/logo.png" alt="SANY PERKASA" className="w-9 h-9 object-contain rounded-full bg-white shrink-0 transition-transform group-hover:scale-105" />
             <div>
               <div className="font-display font-black tracking-tight text-sm leading-none">SANY <span className="text-[#E60012]">PERKASA</span></div>
-              <div className="font-mono text-[9px] tracking-widest uppercase text-white/40 mt-1">CMS v2026</div>
+              <div className="font-mono text-[9px] tracking-widest uppercase text-white/40 mt-1 group-hover:text-[#E60012] transition-colors">CMS v2026</div>
             </div>
-          </div>
+          </button>
         </div>
 
         <button
