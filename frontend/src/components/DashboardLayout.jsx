@@ -83,6 +83,15 @@ export default function DashboardLayout() {
               <div className="font-mono text-[9px] tracking-widest uppercase text-white/40 mt-1 group-hover:text-[#E60012] transition-colors">CMS v2026</div>
             </div>
           </button>
+
+          <Button
+            onClick={doLogout}
+            data-testid="logout-btn"
+            variant="outline"
+            className="w-full mt-4 bg-transparent border-white/10 hover:bg-[#E60012] hover:border-[#E60012] hover:text-white text-white/70 rounded-none h-9 font-mono text-[10px] uppercase tracking-widest"
+          >
+            <LogOut className="w-3 h-3 mr-2" /> Logout
+          </Button>
         </div>
 
         <button
@@ -122,7 +131,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-[#E60012] flex items-center justify-center font-display font-black">
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
@@ -131,14 +140,6 @@ export default function DashboardLayout() {
               <div className="font-mono text-[9px] tracking-widest uppercase text-white/40">{roleLabel(user?.role)}</div>
             </div>
           </div>
-          <Button
-            onClick={doLogout}
-            data-testid="logout-btn"
-            variant="outline"
-            className="w-full bg-transparent border-white/10 hover:bg-white/5 hover:text-white text-white/70 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest"
-          >
-            <LogOut className="w-3 h-3 mr-2" /> Logout
-          </Button>
         </div>
       </aside>
 
